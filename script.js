@@ -15,17 +15,13 @@ const webcamButton = document.getElementById("webcamButton");
 
 const videoWidth = 480;
 
-/* drowsiness variables */
-
 let drowsyFrames = 0;
 const DROWSY_THRESHOLD = 0.23;
 const FRAME_LIMIT = 15;
 
-/* ESP32 IP */
+const ESP32_IP = "http://192.168.1.50";
 
-const ESP32_IP = "http://192.168.29.119";
-
-/* load mediapipe model */
+/* Load MediaPipe model */
 
 async function createFaceLandmarker(){
 
@@ -36,34 +32,29 @@ await FilesetResolver.forVisionTasks(
 
 faceLandmarker =
 await FaceLandmarker.createFromOptions(filesetResolver,{
-
 baseOptions:{
 modelAssetPath:
 "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
 delegate:"GPU"
 },
-
 runningMode,
 numFaces:1
-
 });
 
 }
 
 createFaceLandmarker();
 
-/* distance calculation */
+/* Distance */
 
 function distance(a,b){
-
 return Math.sqrt(
 Math.pow(a.x-b.x,2)+
 Math.pow(a.y-b.y,2)
 );
-
 }
 
-/* EAR calculation */
+/* EAR */
 
 function calculateEAR(eye){
 
@@ -75,7 +66,7 @@ return (A+B)/(2.0*C);
 
 }
 
-/* enable webcam */
+/* Enable webcam */
 
 webcamButton.addEventListener("click", enableCam);
 
@@ -92,18 +83,16 @@ webcamRunning=true;
 webcamButton.innerText="Disable Camera";
 
 navigator.mediaDevices.getUserMedia({video:true})
-.then(function(stream){
-
-video.srcObject=stream;
+.then(stream=>{
+video.srcObject = stream;
 video.addEventListener("loadeddata", predictWebcam);
-
 });
 
 }
 
 }
 
-/* send command to ESP32 */
+/* Send command to ESP32 */
 
 function sendESP32(status){
 
@@ -112,7 +101,7 @@ fetch(`${ESP32_IP}/${status}`)
 
 }
 
-/* prediction */
+/* Prediction loop */
 
 let lastVideoTime = -1;
 
@@ -129,17 +118,15 @@ canvasElement.width = video.videoWidth;
 canvasElement.height = video.videoHeight;
 
 if(runningMode==="IMAGE"){
-
 runningMode="VIDEO";
 await faceLandmarker.setOptions({runningMode:"VIDEO"});
-
 }
 
 let startTimeMs = performance.now();
 
-if(lastVideoTime!==video.currentTime){
+if(lastVideoTime !== video.currentTime){
 
-lastVideoTime=video.currentTime;
+lastVideoTime = video.currentTime;
 
 const results =
 faceLandmarker.detectForVideo(video,startTimeMs);
@@ -150,13 +137,13 @@ if(results.faceLandmarks){
 
 const landmarks = results.faceLandmarks[0];
 
-/* mirror drawing */
+/* Mirror drawing */
 
 canvasCtx.save();
 canvasCtx.scale(-1,1);
 canvasCtx.translate(-canvasElement.width,0);
 
-/* draw mesh */
+/* Draw mesh */
 
 drawingUtils.drawConnectors(
 landmarks,
@@ -166,7 +153,7 @@ FaceLandmarker.FACE_LANDMARKS_TESSELATION,
 
 canvasCtx.restore();
 
-/* eye landmarks */
+/* Eye landmarks */
 
 const leftEye=[
 
@@ -195,11 +182,11 @@ landmarks[380]
 const leftEAR = calculateEAR(leftEye);
 const rightEAR = calculateEAR(rightEye);
 
-const ear = (leftEAR+rightEAR)/2;
+const ear = (leftEAR + rightEAR) / 2;
 
 console.log("EAR:",ear);
 
-/* drowsiness logic */
+/* Drowsiness detection */
 
 if(ear < DROWSY_THRESHOLD){
 
@@ -232,9 +219,7 @@ sendESP32("alert");
 }
 
 if(webcamRunning){
-
 window.requestAnimationFrame(predictWebcam);
-
 }
 
 }
