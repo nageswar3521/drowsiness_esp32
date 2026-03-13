@@ -18,7 +18,7 @@ const videoWidth = 480;
 /* drowsiness variables */
 
 let drowsyFrames = 0;
-const DROWSY_THRESHOLD = 0.23;
+const DROWSY_THRESHOLD = 0.15;
 const FRAME_LIMIT = 15;
 
 /* ESP32 IP */
@@ -236,5 +236,6 @@ if(webcamRunning){
 window.requestAnimationFrame(predictWebcam);
 
 }
+
 
 }
