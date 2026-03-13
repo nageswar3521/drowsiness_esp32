@@ -16,7 +16,7 @@ const button = document.getElementById("webcamButton");
 const ESP32_IP = "http://192.168.29.119";
 
 let drowsyFrames = 0;
-const EAR_THRESHOLD = 0.23;
+const EAR_THRESHOLD = 0.15;
 const FRAME_LIMIT = 15;
 
 /* Load Mediapipe model */
@@ -154,3 +154,4 @@ sendESP32("alert");
 requestAnimationFrame(detect);
 
 }
+
