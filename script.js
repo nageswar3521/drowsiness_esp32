@@ -25,7 +25,7 @@ const FRAME_LIMIT = 15;
 
 const ESP32_IP = "http://192.168.29.119";
 
-/* create model */
+/* create mediapipe model */
 
 async function createFaceLandmarker(){
 
@@ -75,7 +75,7 @@ return (A+B)/(2.0*C);
 
 }
 
-/* webcam */
+/* enable webcam */
 
 webcamButton.addEventListener("click", enableCam);
 
@@ -103,7 +103,7 @@ video.addEventListener("loadeddata", predictWebcam);
 
 }
 
-/* send command to ESP32 */
+/* send command to esp32 */
 
 function sendESP32(status){
 
@@ -112,7 +112,7 @@ fetch(`${ESP32_IP}/${status}`)
 
 }
 
-/* prediction */
+/* prediction loop */
 
 let lastVideoTime = -1;
 
@@ -150,13 +150,21 @@ if(results.faceLandmarks){
 
 const landmarks = results.faceLandmarks[0];
 
-/* draw mesh */
+/* mirror canvas drawing */
+
+canvasCtx.save();
+canvasCtx.scale(-1,1);
+canvasCtx.translate(-canvasElement.width,0);
+
+/* draw face mesh */
 
 drawingUtils.drawConnectors(
 landmarks,
 FaceLandmarker.FACE_LANDMARKS_TESSELATION,
 {color:"#C0C0C070",lineWidth:1}
 );
+
+canvasCtx.restore();
 
 /* eye landmarks */
 
@@ -191,7 +199,7 @@ const ear = (leftEAR+rightEAR)/2;
 
 console.log("EAR:",ear);
 
-/* drowsiness logic */
+/* drowsiness detection */
 
 if(ear < DROWSY_THRESHOLD){
 
@@ -214,6 +222,8 @@ statusText.innerText="STATUS : ALERT";
 statusText.style.color="lime";
 
 sendESP32("alert");
+
+}
 
 }
 

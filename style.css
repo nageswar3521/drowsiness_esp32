@@ -26,20 +26,18 @@ align-items:center;
 justify-content:center;
 }
 
-/* video container */
-
 .video-container{
 position:relative;
 display:inline-block;
 margin-top:10px;
 }
 
-/* mirror webcam */
+/* mirror webcam like selfie camera */
 
 #webcam{
 width:480px;
 height:auto;
-transform: rotateY(180deg);
+transform: scaleX(-1);
 border-radius:8px;
 }
 
@@ -70,8 +68,6 @@ transition:0.3s;
 button:hover{
 background:#00bcd4;
 }
-
-/* mobile */
 
 @media (max-width:600px){
 
