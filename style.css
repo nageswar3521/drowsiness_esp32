@@ -1,0 +1,65 @@
+body {
+
+font-family: Arial;
+text-align: center;
+background: #111;
+color: white;
+
+}
+
+h1{
+color:#00e5ff;
+}
+
+#status{
+
+font-size:30px;
+margin:20px;
+color:lime;
+
+}
+
+.container{
+
+display:flex;
+flex-direction:column;
+align-items:center;
+
+}
+
+video{
+
+transform: rotateY(180deg);
+
+}
+
+#output_canvas{
+
+position:absolute;
+left:0;
+top:0;
+
+}
+
+.video-container{
+
+position:relative;
+
+}
+
+button{
+
+padding:12px 25px;
+font-size:18px;
+background:#00e5ff;
+border:none;
+border-radius:5px;
+cursor:pointer;
+
+}
+
+button:hover{
+
+background:#00bcd4;
+
+}
