@@ -222,4 +222,5 @@ if(webcamRunning){
 window.requestAnimationFrame(predictWebcam);
 }
 
-}
+
+
