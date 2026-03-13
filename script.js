@@ -23,7 +23,7 @@ const FRAME_LIMIT = 15;
 
 /* ESP32 IP */
 
-const ESP32_IP = "http://192.168.1.50";
+const ESP32_IP = "http://192.168.29.119";
 
 /* create model */
 
