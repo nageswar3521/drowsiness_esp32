@@ -18,14 +18,14 @@ const videoWidth = 480;
 /* drowsiness variables */
 
 let drowsyFrames = 0;
-const DROWSY_THRESHOLD = 0.15;
+const DROWSY_THRESHOLD = 0.23;
 const FRAME_LIMIT = 15;
 
 /* ESP32 IP */
 
 const ESP32_IP = "http://192.168.29.119";
 
-/* create mediapipe model */
+/* load mediapipe model */
 
 async function createFaceLandmarker(){
 
@@ -52,7 +52,7 @@ numFaces:1
 
 createFaceLandmarker();
 
-/* distance */
+/* distance calculation */
 
 function distance(a,b){
 
@@ -63,7 +63,7 @@ Math.pow(a.y-b.y,2)
 
 }
 
-/* EAR */
+/* EAR calculation */
 
 function calculateEAR(eye){
 
@@ -103,7 +103,7 @@ video.addEventListener("loadeddata", predictWebcam);
 
 }
 
-/* send command to esp32 */
+/* send command to ESP32 */
 
 function sendESP32(status){
 
@@ -112,7 +112,7 @@ fetch(`${ESP32_IP}/${status}`)
 
 }
 
-/* prediction loop */
+/* prediction */
 
 let lastVideoTime = -1;
 
@@ -150,13 +150,13 @@ if(results.faceLandmarks){
 
 const landmarks = results.faceLandmarks[0];
 
-/* mirror canvas drawing */
+/* mirror drawing */
 
 canvasCtx.save();
 canvasCtx.scale(-1,1);
 canvasCtx.translate(-canvasElement.width,0);
 
-/* draw face mesh */
+/* draw mesh */
 
 drawingUtils.drawConnectors(
 landmarks,
@@ -199,7 +199,7 @@ const ear = (leftEAR+rightEAR)/2;
 
 console.log("EAR:",ear);
 
-/* drowsiness detection */
+/* drowsiness logic */
 
 if(ear < DROWSY_THRESHOLD){
 
@@ -236,6 +236,5 @@ if(webcamRunning){
 window.requestAnimationFrame(predictWebcam);
 
 }
-
 
 }
