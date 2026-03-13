@@ -3,192 +3,132 @@ import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3"
 const { FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
 
 let faceLandmarker;
-let runningMode = "IMAGE";
+let runningMode = "VIDEO";
 let webcamRunning = false;
 
 const video = document.getElementById("webcam");
-const canvasElement = document.getElementById("output_canvas");
-const canvasCtx = canvasElement.getContext("2d");
+const canvas = document.getElementById("output_canvas");
+const ctx = canvas.getContext("2d");
 
 const statusText = document.getElementById("status");
-const webcamButton = document.getElementById("webcamButton");
+const button = document.getElementById("webcamButton");
 
-const videoWidth = 480;
+const ESP32_IP = "http://192.168.29.119";
 
 let drowsyFrames = 0;
-const DROWSY_THRESHOLD = 0.23;
+const EAR_THRESHOLD = 0.23;
 const FRAME_LIMIT = 15;
 
-const ESP32_IP = "http://192.168.1.50";
+/* Load Mediapipe model */
 
-/* Load MediaPipe model */
+async function initModel(){
 
-async function createFaceLandmarker(){
-
-const filesetResolver =
-await FilesetResolver.forVisionTasks(
+const resolver = await FilesetResolver.forVisionTasks(
 "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
 );
 
-faceLandmarker =
-await FaceLandmarker.createFromOptions(filesetResolver,{
+faceLandmarker = await FaceLandmarker.createFromOptions(resolver,{
 baseOptions:{
 modelAssetPath:
-"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-delegate:"GPU"
+"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
 },
-runningMode,
+runningMode:"VIDEO",
 numFaces:1
 });
 
 }
 
-createFaceLandmarker();
+initModel();
 
 /* Distance */
 
-function distance(a,b){
-return Math.sqrt(
-Math.pow(a.x-b.x,2)+
-Math.pow(a.y-b.y,2)
-);
+function dist(a,b){
+return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2);
 }
 
-/* EAR */
+/* Eye Aspect Ratio */
 
-function calculateEAR(eye){
-
-const A = distance(eye[1],eye[5]);
-const B = distance(eye[2],eye[4]);
-const C = distance(eye[0],eye[3]);
-
-return (A+B)/(2.0*C);
-
+function EAR(eye){
+const A = dist(eye[1],eye[5]);
+const B = dist(eye[2],eye[4]);
+const C = dist(eye[0],eye[3]);
+return (A+B)/(2*C);
 }
 
-/* Enable webcam */
+/* Enable camera */
 
-webcamButton.addEventListener("click", enableCam);
-
-function enableCam(){
+button.onclick = async function(){
 
 if(webcamRunning){
-
 webcamRunning=false;
-webcamButton.innerText="Enable Camera";
+button.innerText="Enable Camera";
+return;
+}
 
-}else{
+const stream = await navigator.mediaDevices.getUserMedia({video:true});
+video.srcObject = stream;
 
 webcamRunning=true;
-webcamButton.innerText="Disable Camera";
+button.innerText="Disable Camera";
 
-navigator.mediaDevices.getUserMedia({video:true})
-.then(stream=>{
-video.srcObject = stream;
-video.addEventListener("loadeddata", predictWebcam);
-});
+video.onloadeddata = detect;
 
-}
-
-}
+};
 
 /* Send command to ESP32 */
 
-function sendESP32(status){
-
-fetch(`${ESP32_IP}/${status}`)
-.catch(err=>console.log(err));
-
+function sendESP32(state){
+fetch(`${ESP32_IP}/${state}`).catch(()=>{});
 }
 
-/* Prediction loop */
+/* Detection loop */
 
-let lastVideoTime = -1;
+const draw = new DrawingUtils(ctx);
 
-const drawingUtils = new DrawingUtils(canvasCtx);
+async function detect(){
 
-async function predictWebcam(){
+if(!webcamRunning) return;
 
-const ratio = video.videoHeight/video.videoWidth;
+canvas.width = video.videoWidth;
+canvas.height = video.videoHeight;
 
-video.style.width = videoWidth+"px";
-video.style.height = videoWidth*ratio+"px";
+const results = faceLandmarker.detectForVideo(video, performance.now());
 
-canvasElement.width = video.videoWidth;
-canvasElement.height = video.videoHeight;
+ctx.clearRect(0,0,canvas.width,canvas.height);
 
-if(runningMode==="IMAGE"){
-runningMode="VIDEO";
-await faceLandmarker.setOptions({runningMode:"VIDEO"});
-}
-
-let startTimeMs = performance.now();
-
-if(lastVideoTime !== video.currentTime){
-
-lastVideoTime = video.currentTime;
-
-const results =
-faceLandmarker.detectForVideo(video,startTimeMs);
-
-canvasCtx.clearRect(0,0,canvasElement.width,canvasElement.height);
-
-if(results.faceLandmarks){
+if(results.faceLandmarks.length){
 
 const landmarks = results.faceLandmarks[0];
 
-/* Mirror drawing */
+/* mirror drawing */
 
-canvasCtx.save();
-canvasCtx.scale(-1,1);
-canvasCtx.translate(-canvasElement.width,0);
+ctx.save();
+ctx.scale(-1,1);
+ctx.translate(-canvas.width,0);
 
-/* Draw mesh */
-
-drawingUtils.drawConnectors(
+draw.drawConnectors(
 landmarks,
 FaceLandmarker.FACE_LANDMARKS_TESSELATION,
 {color:"#C0C0C070",lineWidth:1}
 );
 
-canvasCtx.restore();
+ctx.restore();
 
-/* Eye landmarks */
+/* eye points */
 
-const leftEye=[
-
-landmarks[33],
-landmarks[160],
-landmarks[158],
-landmarks[133],
-landmarks[153],
-landmarks[144]
-
+const leftEye = [
+landmarks[33],landmarks[160],landmarks[158],
+landmarks[133],landmarks[153],landmarks[144]
 ];
 
-const rightEye=[
-
-landmarks[362],
-landmarks[385],
-landmarks[387],
-landmarks[263],
-landmarks[373],
-landmarks[380]
-
+const rightEye = [
+landmarks[362],landmarks[385],landmarks[387],
+landmarks[263],landmarks[373],landmarks[380]
 ];
 
-/* EAR */
+const ear = (EAR(leftEye)+EAR(rightEye))/2;
 
-const leftEAR = calculateEAR(leftEye);
-const rightEAR = calculateEAR(rightEye);
-
-const ear = (leftEAR + rightEAR) / 2;
-
-console.log("EAR:",ear);
-
-/* Drowsiness detection */
-
-if(ear < DROWSY_THRESHOLD){
+if(ear < EAR_THRESHOLD){
 
 drowsyFrames++;
 
@@ -196,7 +136,6 @@ if(drowsyFrames > FRAME_LIMIT){
 
 statusText.innerText="STATUS : DROWSY";
 statusText.style.color="red";
-
 sendESP32("drowsy");
 
 }
@@ -204,23 +143,14 @@ sendESP32("drowsy");
 }else{
 
 drowsyFrames=0;
-
 statusText.innerText="STATUS : ALERT";
 statusText.style.color="lime";
-
 sendESP32("alert");
 
 }
 
 }
 
-}
+requestAnimationFrame(detect);
 
 }
-
-if(webcamRunning){
-window.requestAnimationFrame(predictWebcam);
-}
-
-
-
