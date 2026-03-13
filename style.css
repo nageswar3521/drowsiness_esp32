@@ -26,14 +26,16 @@ align-items:center;
 justify-content:center;
 }
 
-/* Video container */
+/* video container */
+
 .video-container{
 position:relative;
 display:inline-block;
 margin-top:10px;
 }
 
-/* Webcam video */
+/* mirror webcam */
+
 #webcam{
 width:480px;
 height:auto;
@@ -41,18 +43,19 @@ transform: rotateY(180deg);
 border-radius:8px;
 }
 
-/* Canvas overlay */
+/* canvas overlay */
+
 #output_canvas{
 position:absolute;
 top:0;
 left:0;
 width:480px;
 height:auto;
-transform: rotateY(180deg);
 pointer-events:none;
 }
 
-/* Button styling */
+/* button */
+
 button{
 padding:12px 25px;
 font-size:18px;
@@ -68,7 +71,8 @@ button:hover{
 background:#00bcd4;
 }
 
-/* Responsive for mobile */
+/* mobile */
+
 @media (max-width:600px){
 
 #webcam{

@@ -3,35 +3,31 @@ import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3"
 const { FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
 
 let faceLandmarker;
-
 let runningMode = "IMAGE";
-
 let webcamRunning = false;
 
 const video = document.getElementById("webcam");
-
 const canvasElement = document.getElementById("output_canvas");
-
 const canvasCtx = canvasElement.getContext("2d");
 
 const statusText = document.getElementById("status");
-
 const webcamButton = document.getElementById("webcamButton");
 
-let videoWidth = 480;
+const videoWidth = 480;
+
+/* drowsiness variables */
 
 let drowsyFrames = 0;
-
 const DROWSY_THRESHOLD = 0.23;
-
 const FRAME_LIMIT = 15;
 
 /* ESP32 IP */
+
 const ESP32_IP = "http://192.168.1.50";
 
 /* create model */
 
-async function createFaceLandmarker() {
+async function createFaceLandmarker(){
 
 const filesetResolver =
 await FilesetResolver.forVisionTasks(
@@ -107,7 +103,7 @@ video.addEventListener("loadeddata", predictWebcam);
 
 }
 
-/* send to esp32 */
+/* send command to ESP32 */
 
 function sendESP32(status){
 
@@ -162,7 +158,7 @@ FaceLandmarker.FACE_LANDMARKS_TESSELATION,
 {color:"#C0C0C070",lineWidth:1}
 );
 
-/* eye points */
+/* eye landmarks */
 
 const leftEye=[
 
@@ -195,13 +191,13 @@ const ear = (leftEAR+rightEAR)/2;
 
 console.log("EAR:",ear);
 
-/* drowsiness */
+/* drowsiness logic */
 
 if(ear < DROWSY_THRESHOLD){
 
 drowsyFrames++;
 
-if(drowsyFrames>FRAME_LIMIT){
+if(drowsyFrames > FRAME_LIMIT){
 
 statusText.innerText="STATUS : DROWSY";
 statusText.style.color="red";
